@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Content Reminder · Work Progress</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --card: #fff;
+    --text: #1a1a2e;
+    --muted: #666;
+    --line: #e5e7eb;
+    --blue: #2563eb;
+    --red: #dc2626;
+    --amber: #d97706;
+    --purple: #7c3aed;
+    --green: #16a34a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
+  .wrap { max-width: 900px; margin: 0 auto; }
+
+  header.top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+  h1 { font-size: 1.45rem; line-height: 1.2; }
+  .sub { font-size: .82rem; color: var(--muted); margin-top: 5px; line-height: 1.5; }
+  .sub b { color: #374151; font-weight: 600; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: 9px;
+         font-weight: 600; font-size: .85rem; text-decoration: none; border: 1px solid transparent;
+         cursor: pointer; font-family: inherit; white-space: nowrap; }
+  .btn-sheet { background: var(--blue); color: #fff; }
+  .btn-sheet:hover { background: #1d4ed8; }
+  .btn-ghost { background: #fff; border-color: #ddd; color: var(--text); }
+  .btn-ghost:hover { background: #f9fafb; }
+  .btn:disabled { opacity: .6; cursor: default; }
+  .spin { display: inline-block; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+  .stat { display: block; width: 100%; background: var(--card); border-radius: 12px; padding: 11px 14px;
+          text-align: left; color: inherit; font: inherit; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,.08);
+          border: 0; border-left: 4px solid var(--line); transition: transform .1s, box-shadow .1s; }
+  .stat:hover { transform: translateY(-1px); }
+  .stat.active-filter { box-shadow: 0 0 0 2px #93c5fd, 0 1px 3px rgba(0,0,0,.08); }
+  .stat .n { display: block; font-size: 1.5rem; font-weight: 700; line-height: 1.15; }
+  .stat .l { font-size: .76rem; color: var(--muted); }
+  .stat.overdue { border-left-color: var(--red); }
+  .stat.overdue .n { color: var(--red); }
+  .stat.today { border-left-color: var(--amber); }
+  .stat.today .n { color: var(--amber); }
+  .stat.tomorrow { border-left-color: var(--purple); }
+  .stat.tomorrow .n { color: var(--purple); }
+  .stat.active { border-left-color: var(--blue); }
+  .stat.active .n { color: var(--blue); }
+
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
+  .toolbar input[type="search"] { flex: 1 1 190px; min-width: 150px; }
+  input, select { font: inherit; font-size: .85rem; padding: 9px 12px; border: 1px solid #ddd;
+                  border-radius: 9px; background: #fff; color: var(--text); }
+  input:focus, select:focus { outline: 2px solid #bfdbfe; outline-offset: 1px; border-color: #93c5fd; }
+  .toggle { display: inline-flex; align-items: center; gap: 7px; font-size: .82rem; color: #444;
+            background: #fff; border: 1px solid #ddd; border-radius: 9px; padding: 9px 12px; cursor: pointer; user-select: none; }
+  .toggle input { width: auto; padding: 0; margin: 0; accent-color: var(--blue); }
+
+  .alert { display: flex; justify-content: space-between; align-items: center; gap: 12px;
+           background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 10px;
+           padding: 10px 14px; margin-bottom: 16px; font-size: .82rem; line-height: 1.5; }
+  .alert[hidden] { display: none; }
+  .alert button { background: #991b1b; color: #fff; border: none; border-radius: 7px;
+                  padding: 6px 12px; font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap; }
+
+  .active-filter { display: flex; justify-content: space-between; align-items: center; gap: 10px;
+                   background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; border-radius: 10px;
+                   padding: 8px 12px; margin-bottom: 12px; font-size: .8rem; }
+  .active-filter[hidden] { display: none; }
+  .active-filter button { background: none; border: none; color: #1e40af; font: inherit;
+                          font-weight: 700; cursor: pointer; text-decoration: underline; white-space: nowrap; }
+
+  .nightly { background: var(--card); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px;
+             box-shadow: 0 1px 3px rgba(0,0,0,.08); border-top: 4px solid #4f46e5; }
+  .nightly[hidden] { display: none; }
+  .nightly-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+  .nightly h2 { font-size: 1rem; }
+  .nightly-sub { font-size: .78rem; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+  .nightly-progress { font-size: .8rem; font-weight: 700; color: #4f46e5; white-space: nowrap; }
+  .nightly-bar { height: 6px; background: #eef0f3; border-radius: 99px; overflow: hidden; margin: 11px 0 4px; }
+  .nightly-bar span { display: block; height: 100%; background: #4f46e5; border-radius: 99px; transition: width .25s; }
+  .nightly-bar span.full { background: var(--green); }
+  .night-group-label { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em;
+                       color: #6b7280; font-weight: 700; margin: 13px 0 6px; }
+  .night-row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 11px; border-radius: 10px;
+               border: 1px solid var(--line); margin-bottom: 6px; cursor: pointer; background: #fcfcfd; }
+  .night-row:hover { background: #f8fafc; }
+  .night-row.checked { background: #f0fdf4; border-color: #bbf7d0; }
+  .night-row input[type="checkbox"] { width: 17px; height: 17px; margin: 1px 0 0; flex-shrink: 0; accent-color: var(--green); }
+  .night-main { flex: 1; min-width: 0; }
+  .night-acc { display: block; font-size: .88rem; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; }
+  .night-meta { display: block; font-size: .72rem; color: var(--muted); margin-top: 2px; line-height: 1.45; }
+  .night-badge { font-size: .68rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; white-space: nowrap; flex-shrink: 0; }
+  .night-badge.ok { background: #dcfce7; color: var(--green); }
+  .night-badge.pending { background: #fef3c7; color: var(--amber); }
+  .nightly-empty { text-align: center; color: #8b8f98; font-size: .84rem; padding: 14px 10px 6px; line-height: 1.6; }
+  .nightly-foot { display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+                  margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .nightly-foot input[type="text"] { font-size: .8rem; padding: 7px 10px; max-width: 190px; }
+  .night-safe { display: inline-flex; align-items: center; gap: 7px; font-size: .82rem;
+                font-weight: 700; cursor: pointer; user-select: none; }
+  .night-safe input { width: 17px; height: 17px; margin: 0; accent-color: var(--green); }
+  .night-safe.disabled { opacity: .5; cursor: not-allowed; }
+  .night-stamp { font-size: .75rem; color: var(--green); font-weight: 600; }
+  .night-stamp[hidden] { display: none; }
+  .night-reset { background: none; border: none; color: #6b7280; font: inherit; font-size: .75rem;
+                 text-decoration: underline; cursor: pointer; margin-left: auto; }
+
+  section.group { margin-bottom: 24px; scroll-margin-top: 16px; }
+  .group-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; }
+  .group-head h2 { font-size: 1rem; }
+  .group-head .hint { font-size: .75rem; color: var(--muted); }
+  .count { background: #e5e7eb; color: #374151; border-radius: 99px; padding: 1px 9px;
+           font-size: .72rem; font-weight: 700; }
+
+  .card { background: var(--card); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px;
+          box-shadow: 0 1px 3px rgba(0,0,0,.08); border-left: 4px solid transparent; }
+  .card.overdue { border-left-color: var(--red); }
+  .card.today { border-left-color: var(--amber); }
+  .card.tomorrow { border-left-color: var(--purple); }
+  .card.soon { border-left-color: var(--blue); }
+  .card.done { border-left-color: var(--green); }
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .card-title { min-width: 0; }
+  .card h3 { font-size: .98rem; line-height: 1.3; overflow-wrap: anywhere; }
+  .meta { font-size: .75rem; color: var(--muted); margin-top: 3px; line-height: 1.5; }
+
+  .badge { font-size: .72rem; padding: 3px 10px; border-radius: 99px; font-weight: 700;
+           white-space: nowrap; flex-shrink: 0; }
+  .badge.overdue { background: #fee2e2; color: var(--red); }
+  .badge.today { background: #fef3c7; color: var(--amber); }
+  .badge.tomorrow { background: #ede9fe; color: var(--purple); }
+  .badge.soon { background: #dbeafe; color: var(--blue); }
+  .badge.later { background: #f1f5f9; color: #475569; }
+  .badge.nodate { background: #f3f4f6; color: #6b7280; }
+  .badge.done { background: #dcfce7; color: var(--green); }
+
+  .progress { display: flex; align-items: center; gap: 10px; margin: 11px 0 9px; }
+  .bar { flex: 1; height: 8px; background: #eef0f3; border-radius: 99px; overflow: hidden; }
+  .bar span { display: block; height: 100%; background: var(--blue); border-radius: 99px; transition: width .25s; }
+  .bar span.full { background: var(--green); }
+  .pct { font-size: .72rem; color: var(--muted); min-width: 76px; text-align: right; font-variant-numeric: tabular-nums; }
+
+  .stages { display: flex; gap: 6px; flex-wrap: wrap; }
+  .stage { display: inline-flex; align-items: center; gap: 6px; font-size: .72rem; padding: 4px 9px;
+           border-radius: 8px; background: #f8fafc; color: #374151; border: 1px solid var(--line); }
+  .stage .dot { width: 7px; height: 7px; border-radius: 50%; background: #9ca3af; flex-shrink: 0; }
+  .stage.done .dot { background: var(--green); }
+  .stage.progress .dot { background: var(--blue); }
+  .stage.waiting .dot { background: var(--amber); }
+  .stage.other .dot { background: #6b7280; }
+  .stage-label { font-weight: 700; }
+  .stage-pic { color: #4b5563; }
+  .stage-status { color: #6b7280; }
+  .stage.done .stage-status { color: var(--green); }
+  .stage.waiting .stage-status { color: var(--amber); }
+  .stage.progress .stage-status { color: var(--blue); }
+
+  .notes { font-size: .78rem; color: #555; margin-top: 8px; line-height: 1.5; overflow-wrap: anywhere; }
+  .notes.warn { color: #b45309; }
+  .plan-link { color: var(--blue); font-weight: 600; text-decoration: none; }
+  .plan-link:hover { text-decoration: underline; }
+  .rating { color: var(--amber); letter-spacing: 1.5px; font-size: .9rem; margin-top: 6px; }
+
+  .empty { background: var(--card); border-radius: 12px; text-align: center; color: #8b8f98;
+           padding: 34px 20px; font-size: .88rem; box-shadow: 0 1px 3px rgba(0,0,0,.06); line-height: 1.6; }
+  .empty .big { font-size: 1.6rem; display: block; margin-bottom: 6px; }
+
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+           background: #1a1a2e; color: #fff; padding: 10px 20px; border-radius: 99px;
+           font-size: .82rem; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 10; }
+  .toast.show { opacity: 1; }
+
+  footer { text-align: center; color: #9aa0a6; font-size: .72rem; padding: 8px 0 40px; line-height: 1.7; }
+  footer a { color: #6b7280; }
+
+  @media (max-width: 640px) {
+    body { padding: 14px; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .actions { width: 100%; }
+    .actions .btn { flex: 1; justify-content: center; }
+    .card-top { flex-direction: column; }
+    .badge { align-self: flex-start; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>📋 Content Reminder</h1>
+      <div class="sub" id="syncInfo" aria-live="polite">Memuat data…</div>
+    </div>
+    <div class="actions">
+      <a class="btn btn-sheet" id="sheetLink" href="#" target="_blank" rel="noopener">Buka Content Plan ↗</a>
+      <button class="btn btn-ghost" id="refresh" type="button"><span id="refreshIcon">🔄</span> Refresh</button>
+    </div>
+  </header>
+
+  <div class="stats">
+    <button class="stat overdue" type="button" data-bucket="overdue">
+      <span class="n" id="cOverdue">–</span><span class="l">Terlambat</span>
+    </button>
+    <button class="stat today" type="button" data-bucket="today">
+      <span class="n" id="cToday">–</span><span class="l">Due hari ini</span>
+    </button>
+    <button class="stat tomorrow" type="button" data-bucket="tomorrow">
+      <span class="n" id="cTomorrow">–</span><span class="l">Urgent besok</span>
+    </button>
+    <button class="stat active" type="button" data-bucket="active">
+      <span class="n" id="cActive">–</span><span class="l">Belum selesai</span>
+    </button>
+  </div>
+
+  <div class="active-filter" id="activeFilter" hidden>
+    <span id="activeFilterText"></span>
+    <button type="button" id="clearFilter">× Hapus filter</button>
+  </div>
+
+  <div class="alert" id="alert" role="alert" hidden></div>
+
+  <section class="nightly" id="nightly" aria-labelledby="nightlyTitle" hidden>
+    <div class="nightly-head">
+      <div>
+        <h2 id="nightlyTitle">🌙 Cek Upload Malam Ini</h2>
+        <div class="nightly-sub" id="nightlySub">Memuat…</div>
+      </div>
+      <div class="nightly-progress" id="nightlyProgress">0/0 terupload</div>
+    </div>
+    <div class="nightly-bar"><span id="nightlyBar" style="width:0%"></span></div>
+    <div id="nightlyList"></div>
+    <div class="nightly-foot">
+      <input type="text" id="nightlyBy" placeholder="Nama petugas (opsional)" aria-label="Nama petugas" autocomplete="off">
+      <label class="night-safe disabled" id="nightSafeLabel">
+        <input type="checkbox" id="nightlySafe" disabled>
+        Semua aman terupload
+      </label>
+      <span class="night-stamp" id="nightlyStamp" hidden></span>
+      <button type="button" class="night-reset" id="nightlyReset">Reset cek</button>
+    </div>
+  </section>
+
+  <div class="toolbar">
+    <input type="search" id="q" placeholder="🔍 Cari akun / PIC / catatan…" aria-label="Cari">
+    <select id="weekFilter" aria-label="Filter minggu"><option value="all">Semua minggu</option></select>
+    <select id="picFilter" aria-label="Filter PIC"><option value="all">Semua PIC</option></select>
+    <label class="toggle"><input type="checkbox" id="showDone"> Tampilkan selesai</label>
+  </div>
+
+  <div id="list"></div>
+
+  <footer>
+    Sumber: tab <b>WORK PROGRESS</b> di <a id="sheetLink2" href="#" target="_blank" rel="noopener">Content Planner</a>.<br>
+    Data dibaca langsung dari Google Sheets. Perubahan di sheet muncul setelah refresh (otomatis tiap 5 menit).<br>
+    Cek upload malam disimpan di browser ini, terpisah untuk setiap tanggal.
+  </footer>
+</div>
+<div class="toast" id="toast"></div>
+
+<script id="core">
+'use strict';
+
+// ==================== Pure data layer (bisa dites terpisah) ====================
+const DAY_MS = 86400000;
+
+const MONTHS = {
+  jan: 0, januari: 0, feb: 1, februari: 1, mar: 2, maret: 2, apr: 3, april: 3,
+  mei: 4, may: 4, jun: 5, juni: 5, jul: 6, juli: 6,
+  agu: 7, agt: 7, aug: 7, agustus: 7,
+  sep: 8, september: 8, okt: 9, oct: 9, oktober: 9,
+  nov: 10, november: 10, des: 11, dec: 11, desember: 11
+};
+const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+const WEEKDAY_INDEX = {
+  minggu: 0, senin: 1, selasa: 2, rabu: 3, kamis: 4, jumat: 5, "jum'at": 5, sabtu: 6
+};
+const WEEKDAY_RE = /^(minggu|senin|selasa|rabu|kamis|jumat|jum'at|sabtu)$/i;
+
+function pad2(n) { return String(n).padStart(2, '0'); }
+function isoLocal(d) { return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; }
+function startOfDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function addDays(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+function dayDiff(a, b) { return Math.round((startOfDay(a) - startOfDay(b)) / DAY_MS); }
+
+function parseISO(s) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || '');
+  if (!m) return null;
+  const d = new Date(+m[1], +m[2] - 1, +m[3]);
+  return (d.getFullYear() === +m[1] && d.getMonth() === +m[2] - 1 && d.getDate() === +m[3]) ? d : null;
+}
+
+function norm(s) { return String(s || '').replace(/\s+/g, ' ').trim().toUpperCase(); }
+
+function monthIndex(name) {
+  const key = String(name || '').toLowerCase().replace(/[^a-z]/g, '');
+  return Object.prototype.hasOwnProperty.call(MONTHS, key) ? MONTHS[key] : null;
+}
+
+// Pilih tahun terdekat dari tanggal referensi (menangani batas Des/Jan).
+function nearestYearTo(day, month, ref) {
+  const ry = ref.getFullYear();
+  let best = null;
+  for (const y of [ry - 1, ry, ry + 1]) {
+    const d = new Date(y, month, day);
+    if (d.getMonth() !== month || d.getDate() !== day) continue;
+    const diff = Math.abs(d - ref);
+    if (!best || diff < best.diff) best = { date: d, diff };
+  }
+  return best ? best.date : null;
+}
+
+function parseCSV(text) {
+  const rows = [];
+  let row = [];
+  let field = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; }
+        else inQuotes = false;
+      } else field += c;
+      continue;
+    }
+    if (c === '"') inQuotes = true;
+    else if (c === ',') { row.push(field); field = ''; }
+    else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+    else if (c === '\r') { /* abaikan, \r\n ditangani oleh \n */ }
+    else field += c;
+  }
+  if (field !== '' || row.length) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+const WEEK_RE = /^WEEK\s*(\d+)?\s*(?:[\/\-–—]\s*)?(\d{1,2})\s+([A-Za-z]+)\s*[-–—]\s*(\d{1,2})\s+([A-Za-z]+)/i;
+
+function parseWeekTitle(title, today) {
+  const m = WEEK_RE.exec(title || '');
+  if (!m) return null;
+
+  const sm = monthIndex(m[3]);
+  const em = monthIndex(m[5]);
+  if (sm === null || em === null) return null;
+
+  const start = nearestYearTo(+m[2], sm, today);
+  if (!start) return null;
+
+  let end = new Date(start.getFullYear(), em, +m[4]);
+  if (end < start) end = new Date(start.getFullYear() + 1, em, +m[4]);
+
+  return {
+    weekNo: m[1] ? +m[1] : null,
+    start,
+    end
+  };
+}
+
+function formatRange(start, end) {
+  const sm = MONTH_SHORT[start.getMonth()];
+  const em = MONTH_SHORT[end.getMonth()];
+  const sy = start.getFullYear();
+  const ey = end.getFullYear();
+  if (sy === ey && start.getMonth() === end.getMonth()) {
+    return `${start.getDate()}–${end.getDate()} ${sm} ${sy}`;
+  }
+  if (sy === ey) {
+    return `${start.getDate()} ${sm} – ${end.getDate()} ${em} ${sy}`;
+  }
+  return `${start.getDate()} ${sm} ${sy} – ${end.getDate()} ${em} ${ey}`;
+}
+
+function mapHeader(cells) {
+  const map = { no: -1, account: -1, picContent: -1, statusContent: -1, picDesign: -1, statusDesign: -1, picPosting: -1, statusPosting: -1 };
+  let statusSeen = 0;
+
+  cells.forEach((cell, i) => {
+    const n = norm(cell);
+    if (!n) return;
+    if (n === 'NO' || n === 'NO.') map.no = i;
+    else if (n === 'ACCOUNT') map.account = i;
+    else if (n.startsWith('PIC CONTENT')) map.picContent = i;
+    else if (n.startsWith('PIC DESIGN')) map.picDesign = i;
+    else if (n.startsWith('PIC POSTING')) map.picPosting = i;
+    else if (n === 'STATUS') {
+      const key = ['statusContent', 'statusDesign', 'statusPosting'][statusSeen];
+      if (key) map[key] = i;
+      statusSeen++;
+    }
+  });
+
+  return map.account >= 0 ? map : null;
+}
+
+function normalizeStatus(s) {
+  const t = norm(s).toLowerCase();
+  if (!t) return 'empty';
+  if (/(upload|uploaded|posted|publish|published|terbit|live|done|selesai)/.test(t)) return 'done';
+  if (/(waiting|menunggu|pending|approval|approve|revisi|review)/.test(t)) return 'waiting';
+  if (/(progress|proses|process|ongoing|on going|jalan)/.test(t)) return 'progress';
+  return 'other';
+}
+
+function progressOf(statuses) {
+  const kinds = statuses.map(normalizeStatus);
+  // Baru dianggap selesai kalau ketiga tahap (konten, design, posting) beres.
+  // Status "UPLOAD" saja tidak cukup kalau design masih In Progress.
+  const complete = kinds.every(k => k === 'done');
+  const score = { done: 1, waiting: 0.55, progress: 0.35, other: 0.5, empty: 0 };
+  const pct = complete ? 100 : Math.round((kinds.reduce((sum, k) => sum + score[k], 0) / 3) * 100);
+  return {
+    kinds,
+    complete,
+    pct,
+    stagesDone: kinds.filter(k => k === 'done').length
+  };
+}
+
+function parseSheet(text, today = new Date()) {
+  const rawRows = parseCSV(String(text || '').replace(/^\uFEFF/, ''));
+  const weeks = [];
+  const rows = [];
+  let current = null;
+  let header = null;
+
+  for (let r = 0; r < rawRows.length; r++) {
+    const cells = rawRows[r];
+    const first = (cells[0] || '').trim();
+
+    const weekMatch = WEEK_RE.exec(first);
+    if (weekMatch) {
+      const w = parseWeekTitle(first, today);
+      if (w) {
+        current = {
+          index: weeks.length,
+          weekNo: w.weekNo,
+          start: w.start,
+          end: w.end,
+          startISO: isoLocal(w.start),
+          endISO: isoLocal(w.end),
+          title: first.replace(/\s+/g, ' ').trim(),
+          label: `${w.weekNo ? 'WEEK ' + w.weekNo : 'WEEK'} · ${formatRange(w.start, w.end)}`
+        };
+        weeks.push(current);
+      } else {
+        current = null;
+      }
+      header = null;
+      continue;
+    }
+
+    if (!current) continue;
+
+    if (!cells.some(c => (c || '').trim() !== '')) { header = null; continue; }
+
+    if (!header) {
+      if (cells.some(c => norm(c) === 'ACCOUNT')) header = mapHeader(cells);
+      continue;
+    }
+
+    const account = (cells[header.account] || '').trim();
+    if (!account) continue;
+
+    const pick = (idx) => idx >= 0 ? (cells[idx] || '').trim() : '';
+    const used = new Set([header.no, header.account, header.picContent, header.statusContent,
+      header.picDesign, header.statusDesign, header.picPosting, header.statusPosting].filter(i => i >= 0));
+
+    let dueRaw = null;
+    let dueDayName = null;
+    let rating = null;
+    const notes = [];
+
+    for (let i = 0; i < cells.length; i++) {
+      if (used.has(i)) continue;
+      const v = (cells[i] || '').trim();
+      if (!v) continue;
+
+      if (/^[★☆\s]+$/.test(v) && /[★☆]/.test(v)) {
+        const filled = (v.match(/★/g) || []).length;
+        const total = filled + (v.match(/☆/g) || []).length;
+        if (total > 0) rating = { filled, total };
+      } else if (/^\d{1,2}\s*[\/.\-]\s*\d{1,2}$/.test(v)) {
+        if (!dueRaw) dueRaw = v;
+      } else if (WEEKDAY_RE.test(v)) {
+        if (!dueDayName) dueDayName = v;
+      } else {
+        notes.push(v);
+      }
+    }
+
+    let dueDate = null;
+    let warning = null;
+
+    if (dueRaw) {
+      const dm = /^(\d{1,2})\s*[\/.\-]\s*(\d{1,2})$/.exec(dueRaw);
+      const dd = dm ? +dm[1] : 0;
+      const mm = dm ? +dm[2] - 1 : -1;
+
+      if (dm && mm >= 0 && mm <= 11 && dd >= 1 && dd <= 31) {
+        const d = nearestYearTo(dd, mm, current.start);
+        if (d) {
+          const farBefore = d < addDays(current.start, -14);
+          const farAfter = d > addDays(current.end, 14);
+          const slightlyOutside = d < addDays(current.start, -3) || d > addDays(current.end, 3);
+
+          if (farBefore || farAfter) {
+            // Kemungkinan baris lama / salah ketik: jangan tampil sebagai overdue berbulan-bulan.
+            warning = `Tanggal di luar rentang minggu (${dueRaw}) — perlu dicek`;
+          } else {
+            dueDate = isoLocal(d);
+            if (slightlyOutside) warning = 'Tanggal di luar rentang minggu';
+            const expected = WEEKDAY_INDEX[norm(dueDayName).toLowerCase()];
+            if (dueDayName && expected !== undefined && expected !== d.getDay()) {
+              warning = warning ? warning + ' & nama hari tidak cocok' : 'Nama hari tidak cocok dengan tanggal';
+            }
+          }
+        } else {
+          warning = 'Tanggal tidak valid';
+        }
+      } else {
+        warning = 'Tanggal tidak valid';
+      }
+    } else if (dueDayName) {
+      notes.push(dueDayName);
+    }
+
+    const statuses = [pick(header.statusContent), pick(header.statusDesign), pick(header.statusPosting)];
+    const progress = progressOf(statuses);
+
+    rows.push({
+      id: `${current.index}-${r}`,
+      weekIndex: current.index,
+      weekLabel: current.label,
+      weekTitle: current.title,
+      weekStart: current.startISO,
+      weekEnd: current.endISO,
+      no: pick(header.no),
+      account,
+      picContent: pick(header.picContent),
+      statusContent: statuses[0],
+      picDesign: pick(header.picDesign),
+      statusDesign: statuses[1],
+      picPosting: pick(header.picPosting),
+      statusPosting: statuses[2],
+      pics: [...new Set([pick(header.picContent), pick(header.picDesign), pick(header.picPosting)].filter(Boolean))],
+      dueDate,
+      dueRaw,
+      dueDayName,
+      rating,
+      notes,
+      warning,
+      complete: progress.complete,
+      pct: progress.pct,
+      stagesDone: progress.stagesDone,
+      stages: [
+        { label: 'Konten', pic: pick(header.picContent), status: statuses[0], kind: progress.kinds[0] },
+        { label: 'Design', pic: pick(header.picDesign), status: statuses[1], kind: progress.kinds[1] },
+        { label: 'Posting', pic: pick(header.picPosting), status: statuses[2], kind: progress.kinds[2] }
+      ]
+    });
+  }
+
+  return { weeks, rows };
+}
+
+function bucketOf(row, today = new Date()) {
+  if (row.complete) return 'done';
+  if (!row.dueDate) return 'nodate';
+  const due = parseISO(row.dueDate);
+  if (!due) return 'nodate';
+  const diff = dayDiff(due, today);
+  if (diff < 0) return 'overdue';
+  if (diff === 0) return 'today';
+  if (diff === 1) return 'tomorrow';
+  if (diff <= 7) return 'soon';
+  return 'later';
+}
+
+function formatDateLong(iso) {
+  const d = parseISO(iso);
+  if (!d) return 'Tanpa tanggal';
+  return d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function formatDateShort(iso) {
+  const d = parseISO(iso);
+  if (!d) return '';
+  return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+}
+
+globalThis.ReminderCore = {
+  DAY_MS, MONTHS, MONTH_SHORT,
+  pad2, isoLocal, startOfDay, addDays, dayDiff, parseISO, norm, monthIndex,
+  nearestYearTo, parseCSV, parseWeekTitle, formatRange, mapHeader,
+  normalizeStatus, progressOf, parseSheet, bucketOf, formatDateLong, formatDateShort
+};
+</script>
+
+<script id="ui">
+'use strict';
+
+const CORE = globalThis.ReminderCore;
+
+// ==================== Konfigurasi sheet ====================
+const SHEET_ID = '1wIInxjschaqpwVpAVXHvn7DxuW31Gius';
+const SHEET_GID = '903228338'; // tab WORK PROGRESS
+const SHEET_CSV = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
+const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit#gid=${SHEET_GID}`;
+const CACHE_KEY = 'content_reminder_cache_v1';
+const NIGHTLY_KEY = 'content_reminder_nightly_v1';
+const REFRESH_MS = 5 * 60 * 1000;
+const CLIENT_LINK_BASE = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit#gid=`;
+
+// Tab content plan per klien. Perbarui daftar ini kalau ada tab klien baru.
+const CLIENT_SHEETS = [
+  { name: 'CLIENT 1 Supaventturbinventilat', gid: '1854432433' },
+  { name: 'CLIENT 2 supaventturbin.id', gid: '1696071707' },
+  { name: 'CLIENT 3 ventimaxsolutions.sby', gid: '933089371' },
+  { name: 'CLIENT 4 SupaVent Official', gid: '1677905398' },
+  { name: 'CLIENT 5 KOREG', gid: '1787911336' },
+  { name: 'CLIENT 6 Alloygatorindonesia', gid: '721346781' },
+  { name: 'CLIENT 7 RIMBLADES', gid: '66661242' },
+  { name: '8 EMGUARDE', gid: '1838933410' },
+  { name: '9 Wadaku Metzger', gid: '1204401005' },
+  { name: '10 SvensChoice', gid: '1699850091' },
+  { name: '11 MyApricity', gid: '234293166' },
+  { name: '12 Kaliber Prima Motor', gid: '1819865485' },
+  { name: '13 Alloygator.Global', gid: '1071174434' }
+];
+
+// ==================== State ====================
+const state = {
+  data: null,
+  lastSync: null,
+  error: null,
+  syncing: false,
+  version: 0,
+  week: 'all',
+  pic: 'all',
+  q: '',
+  bucket: 'all',
+  showDone: false
+};
+
+const $ = (sel) => document.querySelector(sel);
+
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
+function toast(msg) {
+  const t = $('#toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ==================== Link ke tab content plan klien ====================
+function normName(s) {
+  return String(s || '')
+    .toLowerCase()
+    .replace(/^client\s*\d+\s*/, '')
+    .replace(/^\d+\s+/, '')
+    .replace(/[^a-z0-9]/g, '');
+}
+
+const clientCache = new Map();
+
+function clientSheetFor(account) {
+  const a = normName(account);
+  if (!a) return null;
+
+  // Varian nama Alloygator (termasuk typo) semuanya memakai plan CLIENT 6,
+  // kecuali Alloygator.Global yang punya tab sendiri.
+  if (/al{1,2}oygator/.test(a) && !/global/.test(a)) {
+    return CLIENT_SHEETS.find(s => s.name.includes('Alloygatorindonesia')) || null;
+  }
+
+  let best = null;
+  let second = 0;
+
+  for (const sheet of CLIENT_SHEETS) {
+    const n = normName(sheet.name);
+    let score;
+    if (n === a) score = 1;
+    else if (n.startsWith(a) || a.startsWith(n)) score = 0.9;
+    else {
+      let i = 0;
+      while (i < a.length && i < n.length && a[i] === n[i]) i++;
+      score = i / Math.max(a.length, n.length);
+    }
+
+    if (!best || score > best.score) {
+      second = best ? best.score : 0;
+      best = { ...sheet, score };
+    } else if (score > second) {
+      second = score;
+    }
+  }
+
+  if (!best || best.score < 0.7) return null;
+  if (best.score < 0.9 && second >= best.score - 0.05) return null; // terlalu ambigu
+  return best;
+}
+
+function planFor(account) {
+  if (!clientCache.has(account)) clientCache.set(account, clientSheetFor(account));
+  return clientCache.get(account);
+}
+
+// ==================== Cek upload malam ====================
+// Checklist disimpan per tanggal di localStorage, jadi otomatis mulai kosong lagi besok.
+const nightly = { date: '', overrides: {}, by: '', at: null };
+
+function todayISO() { return CORE.isoLocal(new Date()); }
+
+function loadNightly() {
+  nightly.date = todayISO();
+  try {
+    const all = JSON.parse(localStorage.getItem(NIGHTLY_KEY) || '{}');
+    const rec = all[nightly.date] || {};
+    nightly.overrides = rec.overrides && typeof rec.overrides === 'object' ? rec.overrides : {};
+    nightly.by = typeof rec.by === 'string' ? rec.by : '';
+    nightly.at = typeof rec.at === 'string' ? rec.at : null;
+  } catch (e) {
+    console.warn('Cek malam tidak terbaca:', e);
+    nightly.overrides = {};
+    nightly.by = '';
+    nightly.at = null;
+  }
+}
+
+function saveNightly() {
+  try {
+    const all = JSON.parse(localStorage.getItem(NIGHTLY_KEY) || '{}');
+    all[nightly.date] = { overrides: nightly.overrides, by: nightly.by, at: nightly.at };
+    // Simpan maksimal 60 hari supaya localStorage tidak membengkak.
+    const dates = Object.keys(all).sort();
+    while (dates.length > 60) delete all[dates.shift()];
+    localStorage.setItem(NIGHTLY_KEY, JSON.stringify(all));
+  } catch (e) {
+    console.warn('Gagal menyimpan cek malam:', e);
+  }
+}
+
+function nightlyKey(r) { return `${r.account}|${r.dueDate || ''}`; }
+function nightlyAuto(r) { return CORE.normalizeStatus(r.statusPosting) === 'done'; }
+
+function nightlyChecked(r) {
+  const k = nightlyKey(r);
+  return Object.prototype.hasOwnProperty.call(nightly.overrides, k)
+    ? !!nightly.overrides[k]
+    : nightlyAuto(r);
+}
+
+function nightlyItems() {
+  if (!state.data) return { today: [], overdue: [], all: [] };
+  const now = new Date();
+  const items = state.data.rows.filter(r => {
+    if (!r.dueDate) return false;
+    const diff = CORE.dayDiff(CORE.parseISO(r.dueDate), now);
+    if (diff === 0) return true;              // semua yang dijadwalkan hari ini
+    if (diff < 0 && !r.complete) return true; // terlambat dan belum selesai
+    return false;
+  });
+  items.sort((a, b) => a.dueDate.localeCompare(b.dueDate) || a.account.localeCompare(b.account, 'id'));
+  return {
+    today: items.filter(r => CORE.dayDiff(CORE.parseISO(r.dueDate), now) === 0),
+    overdue: items.filter(r => CORE.dayDiff(CORE.parseISO(r.dueDate), now) < 0),
+    all: items
+  };
+}
+
+function renderNightly() {
+  const section = $('#nightly');
+  if (!state.data) { section.hidden = true; return; }
+  if (nightly.date !== todayISO()) loadNightly();
+  section.hidden = false;
+
+  const { today, overdue, all } = nightlyItems();
+  const groups = [];
+  if (today.length) groups.push({ label: 'Jadwal hari ini', rows: today });
+  if (overdue.length) groups.push({ label: 'Terlambat belum terupload', rows: overdue });
+
+  const byInput = $('#nightlyBy');
+  if (document.activeElement !== byInput) byInput.value = nightly.by;
+
+  if (!all.length) {
+    $('#nightlyList').innerHTML = `<div class="nightly-empty">🎉 Tidak ada konten yang perlu dicek malam ini.<br>Tidak ada jadwal hari ini dan tidak ada konten terlambat.</div>`;
+  } else {
+    $('#nightlyList').innerHTML = groups.map(g => `
+      <div class="night-group-label">${g.label} · ${g.rows.length} akun</div>
+      ${g.rows.map(r => {
+        const checked = nightlyChecked(r);
+        const diff = CORE.dayDiff(CORE.parseISO(r.dueDate), new Date());
+        const due = diff === 0 ? 'Jadwal hari ini' : `Terlambat ${Math.abs(diff)} hari`;
+        const meta = [due, CORE.formatDateShort(r.dueDate), `Posting: ${r.statusPosting || 'Belum'}`,
+          r.picPosting].filter(Boolean).map(esc).join(' · ');
+        return `<label class="night-row ${checked ? 'checked' : ''}">
+          <input type="checkbox" data-key="${esc(nightlyKey(r))}" ${checked ? 'checked' : ''}>
+          <span class="night-main">
+            <span class="night-acc">${esc(r.account)}</span>
+            <span class="night-meta">${meta}</span>
+          </span>
+          <span class="night-badge ${checked ? 'ok' : 'pending'}">${checked ? 'Terupload' : 'Belum'}</span>
+        </label>`;
+      }).join('')}
+    `).join('');
+  }
+
+  updateNightlySummary();
+}
+
+function updateNightlyRow(cb) {
+  const row = cb.closest('.night-row');
+  if (!row) return;
+  row.classList.toggle('checked', cb.checked);
+  const badge = row.querySelector('.night-badge');
+  if (badge) {
+    badge.classList.toggle('ok', cb.checked);
+    badge.classList.toggle('pending', !cb.checked);
+    badge.textContent = cb.checked ? 'Terupload' : 'Belum';
+  }
+}
+
+function updateNightlySummary() {
+  if (!state.data) return;
+  const { today, overdue, all } = nightlyItems();
+  const total = all.length;
+  const done = all.filter(nightlyChecked).length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  const allDone = total > 0 && done === total;
+
+  $('#nightlySub').innerHTML = `${esc(CORE.formatDateLong(todayISO()))} · ${today.length} jadwal hari ini · ${overdue.length} terlambat`;
+  $('#nightlyProgress').textContent = `${done}/${total} terupload`;
+
+  const bar = $('#nightlyBar');
+  bar.style.width = `${pct}%`;
+  bar.classList.toggle('full', allDone);
+
+  // Kalau ada akun baru muncul atau ada centang yang dibatalkan, konfirmasi "aman" ikut batal.
+  if (!allDone && nightly.at) {
+    nightly.at = null;
+    saveNightly();
+  }
+
+  const safe = $('#nightlySafe');
+  safe.disabled = !allDone;
+  safe.checked = !!nightly.at && allDone;
+  $('#nightSafeLabel').classList.toggle('disabled', !allDone);
+
+  const stamp = $('#nightlyStamp');
+  const when = nightly.at ? new Date(nightly.at) : null;
+  if (allDone && when && !isNaN(when.getTime())) {
+    stamp.hidden = false;
+    stamp.textContent = `✅ Dicek ${fmtTime(when)}${nightly.by ? ' oleh ' + nightly.by : ''}`;
+  } else {
+    stamp.hidden = true;
+    stamp.textContent = '';
+  }
+}
+
+// ==================== Cache ====================
+function loadCache() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed.text !== 'string') return null;
+    return parsed;
+  } catch (e) {
+    console.warn('Cache tidak terbaca:', e);
+    return null;
+  }
+}
+
+function saveCache(text) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ savedAt: Date.now(), text }));
+  } catch (e) {
+    console.warn('Gagal menyimpan cache:', e);
+  }
+}
+
+// ==================== Format ====================
+function fmtTime(d) {
+  return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+}
+
+function fmtDateTime(d) {
+  return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) + ' ' + fmtTime(d);
+}
+
+function relativeTime(d) {
+  const sec = Math.max(0, Math.floor((Date.now() - d.getTime()) / 1000));
+  if (sec < 45) return 'baru saja';
+  if (sec < 3600) return `${Math.floor(sec / 60)} menit lalu`;
+  if (sec < 86400) return `${Math.floor(sec / 3600)} jam lalu`;
+  return `${Math.floor(sec / 86400)} hari lalu`;
+}
+
+function currentWeek() {
+  if (!state.data) return null;
+  const today = CORE.startOfDay(new Date());
+  return state.data.weeks.find(w => {
+    const s = CORE.parseISO(w.startISO);
+    const e = CORE.parseISO(w.endISO);
+    return s && e && today >= s && today <= e;
+  }) || null;
+}
+
+// ==================== Sync ====================
+async function sync({ manual = false } = {}) {
+  if (state.syncing) return;
+  state.syncing = true;
+  state.error = null;
+  renderSyncInfo();
+  renderRefreshButton();
+
+  try {
+    const res = await fetch(`${SHEET_CSV}&_=${Date.now()}`, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const text = await res.text();
+    if (!text.trim()) throw new Error('Respons sheet kosong');
+    if (/^\s*<!doctype html/i.test(text) || /<html[\s>]/i.test(text.slice(0, 500))) {
+      throw new Error('Sheet tidak bisa diakses (cek pengaturan share)');
+    }
+
+    const data = CORE.parseSheet(text, new Date());
+    if (!data.rows.length) throw new Error('Tidak ada baris data di tab WORK PROGRESS');
+
+    state.data = data;
+    state.version++;
+    state.lastSync = new Date();
+    saveCache(text);
+    if (manual) toast('Data diperbarui ✅');
+  } catch (err) {
+    let e = err;
+    if (location.protocol === 'file:' && /failed to fetch|networkerror|load failed/i.test(String(e && e.message))) {
+      e = new Error('Halaman dibuka lewat file:// — browser memblokir akses ke Google Sheets. Jalankan "start-reminder.command", lalu buka http://127.0.0.1:8765/content-reminder.html');
+    }
+    console.error('Sync gagal:', e);
+    state.error = e;
+    if (!state.data) {
+      const cache = loadCache();
+      if (cache) {
+        try {
+          state.data = CORE.parseSheet(cache.text, new Date());
+          state.version++;
+          state.lastSync = new Date(cache.savedAt);
+        } catch (err) {
+          console.warn('Cache juga tidak valid:', err);
+        }
+      }
+    }
+    if (manual) toast('Gagal memperbarui data');
+  } finally {
+    state.syncing = false;
+    render();
+  }
+}
+
+// ==================== Render ====================
+function render() {
+  renderSyncInfo();
+  renderRefreshButton();
+  renderAlert();
+
+  if (!state.data) {
+    $('#list').innerHTML = `<div class="empty"><span class="big">⏳</span>Menghubungkan ke Google Sheets…</div>`;
+    return;
+  }
+
+  updateFilters();
+  renderStats();
+  renderActiveFilter();
+  renderSections();
+  renderNightly();
+}
+
+function renderSyncInfo() {
+  const el = $('#syncInfo');
+  if (state.syncing && !state.data) { el.textContent = 'Menghubungkan ke Google Sheets…'; return; }
+
+  const bits = [];
+  const cw = currentWeek();
+  if (cw) bits.push(`Minggu aktif: <b>${esc(cw.label)}</b>`);
+  if (state.lastSync && state.data) {
+    bits.push(`Sync ${esc(fmtTime(state.lastSync))} (${esc(relativeTime(state.lastSync))})`);
+    bits.push(`${state.data.rows.length} baris · ${state.data.weeks.length} minggu`);
+  } else if (state.syncing) {
+    bits.push('Menghubungkan…');
+  } else {
+    bits.push('Belum pernah sync');
+  }
+  el.innerHTML = bits.join(' · ');
+}
+
+function renderRefreshButton() {
+  const btn = $('#refresh');
+  const icon = $('#refreshIcon');
+  btn.disabled = state.syncing;
+  icon.classList.toggle('spin', state.syncing);
+}
+
+function renderAlert() {
+  const el = $('#alert');
+  if (!state.error) { el.hidden = true; el.innerHTML = ''; return; }
+
+  el.hidden = false;
+  const msg = state.error.message || String(state.error);
+  const suffix = state.lastSync
+    ? ` Menampilkan data terakhir (${esc(fmtDateTime(state.lastSync))}).`
+    : ' Belum ada data yang bisa ditampilkan.';
+  el.innerHTML = `<span>⚠️ Gagal sync: ${esc(msg)}.${suffix}</span><button type="button" id="retry">Coba lagi</button>`;
+  $('#retry').addEventListener('click', () => sync({ manual: true }));
+}
+
+function updateFilters() {
+  const weekSel = $('#weekFilter');
+  const weekSig = state.data.weeks.map(w => `${w.index}:${w.label}`).join('|');
+  if (weekSel.dataset.sig !== weekSig) {
+    const opts = state.data.weeks.map(w => `<option value="${w.index}">${esc(w.label)}</option>`).join('');
+    weekSel.innerHTML = `<option value="all">Semua minggu</option>${opts}`;
+    weekSel.dataset.sig = weekSig;
+  }
+  if (![...weekSel.options].some(o => o.value === state.week)) state.week = 'all';
+  weekSel.value = state.week;
+
+  const picSel = $('#picFilter');
+  const pics = [...new Set(state.data.rows.flatMap(r => r.pics))].sort((a, b) => a.localeCompare(b, 'id'));
+  const picSig = pics.join('|');
+  if (picSel.dataset.sig !== picSig) {
+    picSel.innerHTML = `<option value="all">Semua PIC</option>${pics.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('')}`;
+    picSel.dataset.sig = picSig;
+  }
+  if (![...picSel.options].some(o => o.value === state.pic)) state.pic = 'all';
+  picSel.value = state.pic;
+}
+
+function filteredRows(applyBucket = true) {
+  const q = state.q.trim().toLowerCase();
+  return state.data.rows.filter(r => {
+    if (state.week !== 'all' && String(r.weekIndex) !== state.week) return false;
+    if (state.pic !== 'all' && !r.pics.includes(state.pic)) return false;
+    if (q) {
+      const hay = [r.account, r.weekTitle, ...r.pics, ...r.notes].join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    if (applyBucket) {
+      if (state.bucket === 'active' && r.complete) return false;
+      if (state.bucket !== 'all' && state.bucket !== 'active' && CORE.bucketOf(r) !== state.bucket) return false;
+    }
+    return true;
+  });
+}
+
+function baseRows() {
+  return filteredRows(true);
+}
+
+function renderStats() {
+  // Hitungan selalu dari semua bucket supaya angka di kartu tidak saling menimpa.
+  const active = filteredRows(false).filter(r => !r.complete);
+  const counts = { overdue: 0, today: 0, tomorrow: 0 };
+  active.forEach(r => {
+    const b = CORE.bucketOf(r);
+    if (counts[b] !== undefined) counts[b]++;
+  });
+  $('#cOverdue').textContent = counts.overdue;
+  $('#cToday').textContent = counts.today;
+  $('#cTomorrow').textContent = counts.tomorrow;
+  $('#cActive').textContent = active.length;
+
+  document.querySelectorAll('.stat').forEach(el => {
+    el.classList.toggle('active-filter', el.dataset.bucket === state.bucket);
+  });
+}
+
+const BUCKET_LABELS = {
+  overdue: '⚠️ Terlambat',
+  today: '🔥 Due hari ini',
+  tomorrow: '🚨 Urgent besok',
+  active: '⏳ Belum selesai'
+};
+
+function renderActiveFilter() {
+  const el = $('#activeFilter');
+  if (state.bucket === 'all') { el.hidden = true; return; }
+  el.hidden = false;
+  $('#activeFilterText').textContent = `Filter aktif: ${BUCKET_LABELS[state.bucket] || state.bucket} · ${baseRows().length} konten`;
+}
+
+function refreshList() {
+  if (!state.data) return;
+  renderStats();
+  renderActiveFilter();
+  renderSections();
+}
+
+function sortByDue(a, b, desc = false) {
+  if (a.dueDate && b.dueDate) {
+    const cmp = a.dueDate.localeCompare(b.dueDate);
+    if (cmp) return desc ? -cmp : cmp;
+  } else if (a.dueDate) return -1;
+  else if (b.dueDate) return 1;
+  return a.account.localeCompare(b.account, 'id');
+}
+
+function badgeFor(bucket, diff, dueDate) {
+  switch (bucket) {
+    case 'overdue': return { cls: 'overdue', label: `⚠️ Terlambat ${Math.abs(diff)} hari` };
+    case 'today': return { cls: 'today', label: '🔥 Hari ini' };
+    case 'tomorrow': return { cls: 'tomorrow', label: '🚨 Besok' };
+    case 'soon': return { cls: 'soon', label: `📅 ${diff} hari lagi` };
+    case 'later': return { cls: 'later', label: `🗓️ ${CORE.formatDateShort(dueDate)}` };
+    case 'done': return { cls: 'done', label: '✅ Selesai' };
+    default: return { cls: 'nodate', label: '❓ Tanpa tanggal' };
+  }
+}
+
+function renderCard(r) {
+  const today = new Date();
+  const bucket = CORE.bucketOf(r, today);
+  const diff = r.dueDate ? CORE.dayDiff(CORE.parseISO(r.dueDate), today) : null;
+  const badge = badgeFor(bucket, diff, r.dueDate);
+  const dueText = r.dueDate ? `Due ${CORE.formatDateLong(r.dueDate)}` : 'Belum ada jadwal approval';
+  const plan = planFor(r.account);
+  const planLink = plan
+    ? ` · <a class="plan-link" href="${CLIENT_LINK_BASE}${plan.gid}" target="_blank" rel="noopener" title="Buka content plan: ${esc(plan.name)}">Content plan ↗</a>`
+    : '';
+
+  const stages = r.stages.map(s => `
+    <span class="stage ${s.kind}" title="${esc(s.label)} — ${esc(s.pic || 'tanpa PIC')}: ${esc(s.status || 'belum')}">
+      <span class="dot"></span>
+      <span class="stage-label">${esc(s.label)}</span>
+      <span class="stage-pic">${esc(s.pic || '—')}</span>
+      <span class="stage-status">${esc(s.status || 'Belum')}</span>
+    </span>`).join('');
+
+  const notes = r.notes.length
+    ? `<div class="notes">📝 ${r.notes.map(esc).join(' · ')}</div>`
+    : '';
+  const warn = r.warning
+    ? `<div class="notes warn">⚠︎ ${esc(r.warning)}${r.dueRaw ? ` (${esc(r.dueRaw)})` : ''}</div>`
+    : '';
+  const rating = r.rating && r.rating.filled > 0
+    ? `<div class="rating" title="Rating ${r.rating.filled}/${r.rating.total}">${'★'.repeat(r.rating.filled)}${'☆'.repeat(r.rating.total - r.rating.filled)}</div>`
+    : '';
+
+  return `<article class="card ${bucket}">
+    <div class="card-top">
+      <div class="card-title">
+        <h3>${esc(r.account)}</h3>
+        <div class="meta">${esc(r.weekLabel)} · No. ${esc(r.no || '—')} · ${esc(dueText)}${planLink}</div>
+      </div>
+      <span class="badge ${badge.cls}">${badge.label}</span>
+    </div>
+    <div class="progress" title="Progress keseluruhan">
+      <div class="bar"><span class="${r.pct === 100 ? 'full' : ''}" style="width:${r.pct}%"></span></div>
+      <span class="pct">${r.pct}% · ${r.stagesDone}/3</span>
+    </div>
+    <div class="stages">${stages}</div>
+    ${notes}${warn}${rating}
+  </article>`;
+}
+
+function renderSections() {
+  if (!state.data) return;
+  const list = $('#list');
+  const all = baseRows();
+
+  if (all.length === 0) {
+    const msg = state.bucket !== 'all'
+      ? `Tidak ada konten di filter “${BUCKET_LABELS[state.bucket] || state.bucket}”. 🎉`
+      : 'Tidak ada konten yang cocok dengan filter.<br>Coba hapus kata kunci atau pilih “Semua minggu”.';
+    list.innerHTML = `<div class="empty"><span class="big">🔍</span>${msg}</div>`;
+    return;
+  }
+
+  const rows = state.showDone ? all : all.filter(r => !r.complete);
+  if (rows.length === 0) {
+    list.innerHTML = `<div class="empty"><span class="big">🎉</span>Semua konten di filter ini sudah selesai.<br>Centang “Tampilkan selesai” untuk melihat riwayatnya.</div>`;
+    return;
+  }
+
+  const attentionTitle = state.bucket === 'overdue' ? '⚠️ Terlambat'
+    : state.bucket === 'today' ? '🔥 Due Hari Ini'
+    : state.bucket === 'tomorrow' ? '🚨 Urgent Besok'
+    : '🚨 Perlu Perhatian';
+
+  const groups = [
+    { key: 'attention', title: attentionTitle, hint: state.bucket === 'all' ? 'terlambat · hari ini · besok' : '', match: ['overdue', 'today', 'tomorrow'] },
+    { key: 'soon', title: '📅 7 Hari ke Depan', hint: '', match: ['soon'] },
+    { key: 'later', title: '🗓️ Setelahnya', hint: '', match: ['later'] },
+    { key: 'nodate', title: '❓ Tanpa Tanggal', hint: 'belum ada jadwal approval', match: ['nodate'] }
+  ];
+  if (state.showDone) groups.push({ key: 'done', title: '✅ Selesai', hint: '', match: ['done'] });
+
+  const byKey = {};
+  groups.forEach(g => { byKey[g.key] = []; });
+  rows.forEach(r => {
+    const b = CORE.bucketOf(r);
+    const g = groups.find(x => x.match.includes(b));
+    if (g) byKey[g.key].push(r);
+  });
+
+  const html = groups.map(g => {
+    const items = byKey[g.key];
+    if (!items.length) return '';
+    items.sort((a, b) => sortByDue(a, b, g.key === 'done'));
+    return `<section class="group" id="sec-${g.key}">
+      <div class="group-head">
+        <h2>${g.title}</h2>
+        <span class="count">${items.length}</span>
+        ${g.hint ? `<span class="hint">${g.hint}</span>` : ''}
+      </div>
+      ${items.map(renderCard).join('')}
+    </section>`;
+  }).join('');
+
+  list.innerHTML = html || `<div class="empty"><span class="big">🎉</span>Tidak ada konten untuk ditampilkan.</div>`;
+}
+
+// ==================== Events ====================
+function bindEvents() {
+  $('#refresh').addEventListener('click', () => sync({ manual: true }));
+
+  $('#q').addEventListener('input', (e) => {
+    state.q = e.target.value;
+    refreshList();
+  });
+
+  $('#weekFilter').addEventListener('change', (e) => {
+    state.week = e.target.value;
+    refreshList();
+  });
+
+  $('#picFilter').addEventListener('change', (e) => {
+    state.pic = e.target.value;
+    refreshList();
+  });
+
+  document.querySelectorAll('.stat').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const b = btn.dataset.bucket;
+      state.bucket = state.bucket === b ? 'all' : b;
+      refreshList();
+    });
+  });
+
+  $('#clearFilter').addEventListener('click', () => {
+    state.bucket = 'all';
+    refreshList();
+  });
+
+  $('#showDone').addEventListener('change', (e) => {
+    state.showDone = e.target.checked;
+    renderSections();
+  });
+
+  $('#nightlyList').addEventListener('change', (e) => {
+    const cb = e.target.closest('input[type="checkbox"][data-key]');
+    if (!cb) return;
+    nightly.overrides[cb.dataset.key] = cb.checked;
+    saveNightly();
+    updateNightlyRow(cb);
+    updateNightlySummary();
+  });
+
+  $('#nightlyBy').addEventListener('input', (e) => {
+    nightly.by = e.target.value;
+    saveNightly();
+    updateNightlySummary();
+  });
+
+  $('#nightlySafe').addEventListener('change', (e) => {
+    if (e.target.checked) {
+      nightly.at = new Date().toISOString();
+      nightly.by = $('#nightlyBy').value.trim();
+      toast('Cek malam tersimpan ✅');
+    } else {
+      nightly.at = null;
+    }
+    saveNightly();
+    updateNightlySummary();
+  });
+
+  $('#nightlyReset').addEventListener('click', () => {
+    nightly.overrides = {};
+    nightly.at = null;
+    saveNightly();
+    renderNightly();
+    toast('Cek malam direset');
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return;
+    if (!state.lastSync || Date.now() - state.lastSync.getTime() > 60000) sync();
+  });
+
+  setInterval(() => {
+    if (state.data) renderSyncInfo();
+  }, 30000);
+
+  setInterval(() => sync(), REFRESH_MS);
+}
+
+// ==================== Init ====================
+(function init() {
+  $('#sheetLink').href = SHEET_URL;
+  $('#sheetLink2').href = SHEET_URL;
+
+  const cache = loadCache();
+  if (cache) {
+    try {
+      state.data = CORE.parseSheet(cache.text, new Date());
+      state.version++;
+      state.lastSync = new Date(cache.savedAt);
+    } catch (e) {
+      console.warn('Cache tidak bisa diparse:', e);
+    }
+  }
+
+  bindEvents();
+  loadNightly();
+  render();
+  sync();
+})();
+</script>
+</body>
+</html>
